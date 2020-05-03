@@ -1,5 +1,6 @@
 import numpy as np
 from tensorflow import keras
+import tensorflow.keras.backend as K
 
 '''
 Each video path is the shape of:
@@ -11,8 +12,8 @@ Example:
 
 
 class VideoDataGenerator(keras.utils.Sequence):
-    def __init__(self, list_IDs, dict_id_data, batch_size=32, dim=(96, 96), n_channels=3, padding_val=-1,
-                 n_classes=7, shuffle=True, folder_name='./data/Cropped_Faces_CAER_npy', partition='train',
+    def __init__(self, list_IDs, dict_id_data, batch_size=1, dim=(96, 96), n_channels=3, padding_val=-1,
+                 n_classes=7, shuffle=True, folder_name='/notebooks/data/Cropped_Faces_CAER_npy', partition='train',
                  data_format='npy'):
         self.list_IDs = list_IDs
         self.dict_id_data = dict_id_data
@@ -52,35 +53,27 @@ class VideoDataGenerator(keras.utils.Sequence):
 
     # Generates data containing batch_size samples
     def __data_generation(self, list_IDs_temp):
-        # X : (n_samples, *dim, n_channels)
+        # X : (n_samples, max_n_frames, *dim, n_channels)
         # Initialization
         max_n_frames = 0
 
-        # list of tuple (ID, video)
         videos_list = []
-
         # Generate data
+        y = np.empty(shape=(self.batch_size), dtype=int)
         for i, ID in enumerate(list_IDs_temp):
             video_emotion = self.dict_id_data[ID]['emotion']
             video_name = self.dict_id_data[ID]['video_name']
             file_path = '%s/%s/%s/%04d%s' % (
                 self.folder_name, self.partition, video_emotion, video_name, self.data_format)
             video = np.load(file=file_path)
-            max_n_frames = max(max_n_frames, video.shape[0])
-            videos_list.append((ID, video))
-
-        X = np.empty(shape=(self.batch_size, max_n_frames, *self.dim, self.n_channels))
-        y = np.empty(shape=(self.batch_size), dtype=int)
-        for i, tuple in enumerate(videos_list):
-            ID, video = tuple
-            X[i] = self.pad_video(video, max_n_frames)
             y[i] = self.dict_id_data[ID]['label_val']
+            max_n_frames = max(max_n_frames, video.shape[0])
+            videos_list.append(video)
 
+        # pad videos with self.padding_val
+        X = keras.preprocessing.sequence.pad_sequences(sequences=videos_list, padding='post',
+                                                       maxlen=max_n_frames, value=self.padding_val)
+
+        y_onehot = keras.utils.to_categorical(y, num_classes=self.n_classes)
         # return labels in one_hot form
-        return X, keras.utils.to_categorical(y, num_classes=self.n_classes)
-
-    # pad the video with frames filled with padding_val
-    def pad_video(self, video, max_frames):
-        padded_video = np.full(shape=(max_frames, *(video.shape[1:])), fill_value=self.padding_val)
-        padded_video[:video.shape[0]] = video
-        return padded_video
+        return K.constant(X), K.constant(y_onehot)
