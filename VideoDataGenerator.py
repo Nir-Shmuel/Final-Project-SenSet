@@ -12,7 +12,7 @@ Example:
 
 
 class VideoDataGenerator(keras.utils.Sequence):
-    def __init__(self, list_IDs, dict_id_data, batch_size=1, dim=(96, 96), n_channels=3, padding_val=-1,
+    def __init__(self, list_IDs, dict_id_data, batch_size=1, dim=(96, 96), n_channels=3, padding_val=-1, timesteps=None,
                  n_classes=7, shuffle=True, folder_name='/notebooks/data/Cropped_Faces_CAER_npy', partition='train',
                  data_format='npy'):
         self.list_IDs = list_IDs
@@ -21,6 +21,7 @@ class VideoDataGenerator(keras.utils.Sequence):
         self.dim = dim
         self.n_channels = n_channels
         self.padding_val = padding_val
+        self.timesteps = timesteps
         self.n_classes = n_classes
         self.shuffle = shuffle
         self.data_format = data_format
@@ -55,7 +56,6 @@ class VideoDataGenerator(keras.utils.Sequence):
     def __data_generation(self, list_IDs_temp):
         # X : (n_samples, max_n_frames, *dim, n_channels)
         # Initialization
-        max_n_frames = 0
 
         videos_list = []
         # Generate data
@@ -67,11 +67,15 @@ class VideoDataGenerator(keras.utils.Sequence):
                 self.folder_name, self.partition, video_emotion, video_name, self.data_format)
             video = np.load(file=file_path)
             y[i] = self.dict_id_data[ID]['label_val']
-            max_n_frames = max(max_n_frames, video.shape[0])
             videos_list.append(video)
 
+        if self.timesteps is None:
+            max_n_frames = np.max([v.shape[0] for v in videos_list])
+        else:
+            max_n_frames = self.timesteps
+
         # pad videos with self.padding_val
-        X = keras.preprocessing.sequence.pad_sequences(sequences=videos_list, padding='post',
+        X = keras.preprocessing.sequence.pad_sequences(sequences=videos_list, padding='post', truncating='post',
                                                        maxlen=max_n_frames, value=self.padding_val)
 
         y_onehot = keras.utils.to_categorical(y, num_classes=self.n_classes)
