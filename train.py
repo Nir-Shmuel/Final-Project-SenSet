@@ -2,12 +2,12 @@ from ConvLSTM_Model import ConvLSTMModel
 from VideoDataGenerator import VideoDataGenerator
 import glob
 
-n_epochs = 100
+n_epochs = 10
 batch_size = 16
 videos_format = 'npy'
 emotions = ('Anger', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Surprise', 'Sad')
-data_root_folder = '/notebooks/data/Cropped_Faces_CAER_npy'
-
+# data_root_folder = '/notebooks/data/Cropped_Faces_CAER_npy'
+data_root_folder = r'C:\BSc_CS\Final_Project\data\Cropped_Faces_CAER_npy'
 folders_structure = {
     'train': [emotions[i] for i in range(len(emotions))],
     'validation': [emotions[i] for i in range(len(emotions))],
@@ -51,6 +51,6 @@ val_generator = VideoDataGenerator(list_IDs=partition['validation'], dict_id_dat
                                    data_format='.%s' % videos_format, folder_name=data_root_folder)
 model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
 model.summary()
-model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 # train the model
-model.fit(x=train_generator, validation_data=val_generator, epochs=n_epochs)
+model.fit(x=train_generator, validation_data=val_generator, epochs=n_epochs, use_multiprocessing=True)
