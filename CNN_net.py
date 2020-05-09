@@ -49,5 +49,3 @@ class CnnModel(Sequential):
 
         self.add(layers.Dense(7))
         self.add(layers.Softmax(-1))
-
-        return self

@@ -1,6 +1,6 @@
-
 from ConvLSTM_Model import ConvLSTMModel
 from VideoDataGenerator import VideoDataGenerator
+from CNN_net import CnnModel
 import glob
 
 n_epochs = 10
@@ -51,6 +51,7 @@ train_generator = VideoDataGenerator(list_IDs=partition['train'], dict_id_data=d
 val_generator = VideoDataGenerator(list_IDs=partition['validation'], dict_id_data=dict_id_data, batch_size=batch_size,
                                    data_format='.%s' % videos_format, folder_name=data_root_folder)
 model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
+#model = CnnModel(channels=3, pixels_x=96, pixels_y=96)
 model.summary()
 model.compile(optimizer='Adam', loss='categorical_crossentropy', metrics=['categorical_accuracy'])
 # train the model
