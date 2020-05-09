@@ -7,7 +7,7 @@ Each video path is the shape of:
     ./data/<folder_name>/<partition>/<labels[i]>/<%04d><data_format>
 Example:
     ./data/Cropped_Faces_CAER_npy/train/Anger/0001.npy
-    
+
 '''
 
 
