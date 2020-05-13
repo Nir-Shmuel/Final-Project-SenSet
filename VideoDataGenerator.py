@@ -1,6 +1,7 @@
 import numpy as np
 from tensorflow import keras
 import tensorflow.keras.backend as K
+import random
 
 '''
 Each video path is the shape of:
@@ -13,7 +14,7 @@ Example:
 
 class VideoDataGenerator(keras.utils.Sequence):
     def __init__(self, list_IDs, dict_id_data, batch_size=1, dim=(96, 96), n_channels=3, padding_val=-1, timesteps=None,
-                 n_classes=7, shuffle=True, folder_name='/notebooks/data/Cropped_Faces_CAER_npy', partition='train',
+                 n_classes=7, shuffle=True, folder_name='/tf/data/Cropped_Faces_CAER_npy', partition='train',
                  data_format='npy'):
         self.list_IDs = list_IDs
         self.dict_id_data = dict_id_data
@@ -71,14 +72,24 @@ class VideoDataGenerator(keras.utils.Sequence):
 
         if self.timesteps is None:
             max_n_frames = np.max([v.shape[0] for v in videos_list])
-            max_n_frames = min(max_n_frames, 200)
+            max_n_frames = min(max_n_frames, 60)
         else:
             max_n_frames = self.timesteps
-
+        r_trunc = self.random_truncating(videos_list, max_n_frames)
         # pad videos with self.padding_val
-        X = keras.preprocessing.sequence.pad_sequences(sequences=videos_list, padding='post', truncating='post',
-                                                       maxlen=max_n_frames, value=self.padding_val)
+        X = keras.preprocessing.sequence.pad_sequences(sequences=r_trunc, padding='post', maxlen=max_n_frames,
+                                                       value=self.padding_val)
 
         y_onehot = keras.utils.to_categorical(y, num_classes=self.n_classes)
         # return labels in one_hot form
         return K.constant(X), K.constant(y_onehot)
+
+    def random_truncating(self, video_list, n_frames):
+        padded = []
+        for video in video_list:
+            if video.shape[0] > n_frames:
+                i = random.randint(0, video.shape[0] - n_frames)
+                padded.append(video[i:i + n_frames])
+            else:
+                padded.append(video)
+        return padded
