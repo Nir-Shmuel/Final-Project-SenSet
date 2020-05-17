@@ -14,6 +14,7 @@ class CnnModel(Sequential):
         self.add(layers.LeakyReLU(alpha=0.3))
         self.add(layers.BatchNormalization())
         self.add(layers.MaxPool3D(pool_size=(1, 2, 2), strides=None, padding='valid'))
+        self.add(layers.Dropout(0.2)
 
         self.add(
             layers.Conv3D(filters=64, kernel_size=(3, 3, 3), padding='same', use_bias=False,
@@ -28,6 +29,7 @@ class CnnModel(Sequential):
         self.add(layers.LeakyReLU(alpha=0.3))
         self.add(layers.BatchNormalization())
         self.add(layers.MaxPool3D(pool_size=(2, 2, 2), strides=None, padding='valid'))
+        self.add(layers.Dropout(0.15)
 
         self.add(
             layers.Conv3D(filters=256, kernel_size=(3, 3, 3), padding='same', use_bias=False,
