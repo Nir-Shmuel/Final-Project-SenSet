@@ -72,7 +72,7 @@ class VideoDataGenerator(keras.utils.Sequence):
 
         if self.timesteps is None:
             max_n_frames = np.max([v.shape[0] for v in videos_list])
-            max_n_frames = min(max_n_frames, 60)
+            max_n_frames = min(max_n_frames, 20)
         else:
             max_n_frames = self.timesteps
         r_trunc = self.random_truncating(videos_list, max_n_frames)
