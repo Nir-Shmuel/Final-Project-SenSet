@@ -14,7 +14,7 @@ root_path = '/tf/convlstm'
 model_save_path = root_path + '/model'
 loss_save_path = root_path + '/loss'
 acc_save_path = root_path + '/accuracy'
-data_root_folder = '/tf/data/Cropped_Faces_CAER_npy'
+data_root_folder = r'C:\Users\Dor\Desktop\Cropped_Faces_CAER_npy'
 
 videos_format = 'npy'
 
@@ -72,7 +72,10 @@ model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 # train the model
 callbacks_list = [
     callbacks.EarlyStopping(monitor='val_loss', min_delta=5e-3, patience=10),
-    # callbacks.ModelCheckpoint()
+
+    callbacks.ModelCheckpoint(filepath=os.path.join(model_save_path, 'model.{epoch:03d}-{val_loss:.3f}.hdf5'),
+    verbose=1,
+    save_best_only=True)
 ]
 history = model.fit(x=train_generator, validation_data=val_generator, epochs=n_epochs)
 
