@@ -1,5 +1,5 @@
 from tensorflow.keras.optimizers import Nadam, Adam, SGD
-
+import tensorflow.keras as keras
 from ConvLSTM_Model import ConvLSTMModel
 from VideoDataGenerator import VideoDataGenerator
 from tensorflow.keras.models import load_model
@@ -8,7 +8,7 @@ import os
 import matplotlib.pyplot as plt
 import glob
 
-n_epochs = 150
+n_epochs = 100
 batch_size = 4
 root_path = '/tf/convlstm'
 model_save_path = root_path + '/model'
@@ -38,31 +38,6 @@ def path2video_name(v_path, vf_len, id_len):
     return int(v_path[-(id_len + vf_len + 1): -(vf_len + 1)])
 
 
-def gen_and_save_graphs():
-    if not os.path.exists(loss_save_path):
-        os.mkdir(loss_save_path)
-    # "Loss"
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc='upper left')
-    plt.savefig(loss_save_path + '/losses')
-    plt.close()
-    #  "Accuracy"
-    if not os.path.exists(acc_save_path):
-        os.mkdir(acc_save_path)
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc='upper left')
-    plt.savefig(acc_save_path + r'\accuracy')
-    plt.close()
-
-
 def map_data(data_path):
     for par in folders_structure:
         par_path = '%s/%s' % (data_path, par)
@@ -87,11 +62,41 @@ val_generator = VideoDataGenerator(list_IDs=partition['validation'], dict_id_dat
                                    data_format='.%s' % videos_format, folder_name=data_root_folder)
 model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
 model.summary()
-
-optimizer = SGD()
-model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['categorical_accuracy'])
+optimizer = Nadam(lr=0.002,
+                  beta_1=0.9,
+                  beta_2=0.999,
+                  epsilon=1e-08,
+                  schedule_decay=0.004)
+loss = keras.losses.CategoricalCrossentropy()
+model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 # train the model
 callbacks_list = [
-    callbacks.BaseLogger
+    callbacks.EarlyStopping(monitor='val_loss', min_delta=5e-3, patience=10),
+    # callbacks.ModelCheckpoint()
 ]
 history = model.fit(x=train_generator, validation_data=val_generator, epochs=n_epochs)
+
+'''Generate Loss & Accuracy graphs'''
+# "Loss"
+if not os.path.exists(loss_save_path):
+    os.mkdir(loss_save_path)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['train', 'validation'], loc='upper left')
+plt.savefig(loss_save_path + '/losses')
+plt.close()
+#  "Accuracy"
+if not os.path.exists(acc_save_path):
+    os.mkdir(acc_save_path)
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train', 'validation'], loc='upper left')
+plt.savefig(acc_save_path + '/accuracy')
+plt.close()
+# model.save(filepath=model_save_path + '/ConvLSTM.h5')
