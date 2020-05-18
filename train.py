@@ -15,7 +15,7 @@ model_save_path = root_path + '/model'
 loss_save_path = root_path + '/loss'
 acc_save_path = root_path + '/accuracy'
 data_root_folder = '/tf/data/Cropped_Faces_CAER_npy'
-
+saved_model = None
 videos_format = 'npy'
 
 emotions = ('Anger', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Surprise', 'Sad')
@@ -60,7 +60,14 @@ train_generator = VideoDataGenerator(list_IDs=partition['train'], dict_id_data=d
                                      folder_name=data_root_folder, data_format='.%s' % videos_format)
 val_generator = VideoDataGenerator(list_IDs=partition['validation'], dict_id_data=dict_id_data, batch_size=batch_size,
                                    data_format='.%s' % videos_format, folder_name=data_root_folder)
-model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
+
+if saved_model is not None:
+    print("Loading model %s" % saved_model)
+    model = load_model(saved_model)
+else:
+    print("Loading LSTM model.")
+    model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
+
 model.summary()
 optimizer = Nadam(lr=0.002,
                   beta_1=0.9,
