@@ -14,7 +14,7 @@ root_path = '/tf/convlstm'
 model_save_path = root_path + '/model'
 loss_save_path = root_path + '/loss'
 acc_save_path = root_path + '/accuracy'
-data_root_folder = r'C:\Users\Dor\Desktop\Cropped_Faces_CAER_npy'
+data_root_folder = '/tf/data/Cropped_Faces_CAER_npy'
 
 videos_format = 'npy'
 
