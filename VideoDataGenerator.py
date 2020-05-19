@@ -14,8 +14,8 @@ Example:
 
 class VideoDataGenerator(keras.utils.Sequence):
     def __init__(self, list_IDs, dict_id_data, batch_size=1, dim=(96, 96), n_channels=3, padding_val=-1, timesteps=None,
-                 n_classes=7, shuffle=True, folder_name='/tf/data/Cropped_Faces_CAER_npy', partition='train',
-                 data_format='npy'):
+                 n_classes=7, shuffle=True, folder_name='/tf/data/Cropped_Faces_CAER_npy', partition=None,
+                 data_format='.npy'):
         self.list_IDs = list_IDs
         self.dict_id_data = dict_id_data
         self.batch_size = batch_size
@@ -82,7 +82,7 @@ class VideoDataGenerator(keras.utils.Sequence):
 
         y_onehot = keras.utils.to_categorical(y, num_classes=self.n_classes)
         # return labels in one_hot form
-        return K.constant(X), K.constant(y_onehot)
+        return X, y_onehot
 
     def random_truncating(self, video_list, n_frames):
         padded = []
