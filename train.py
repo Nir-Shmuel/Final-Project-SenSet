@@ -1,9 +1,8 @@
-from tensorflow.keras.optimizers import Nadam, Adam, SGD, RMSprop
+from tensorflow.keras.optimizers import RMSprop
 import tensorflow.keras as keras
 from ConvLSTM_Model import ConvLSTMModel
 from VideoDataGenerator import VideoDataGenerator
 from tensorflow.keras.models import load_model
-import numpy as np
 from tensorflow.keras import callbacks
 import os
 import matplotlib.pyplot as plt
@@ -56,6 +55,7 @@ def map_data(data_path):
 
 
 map_data(data_root_folder)
+
 # set generators with default values
 train_generator = VideoDataGenerator(list_IDs=partition['train'], dict_id_data=dict_id_data, batch_size=batch_size,
                                      folder_name=data_root_folder, partition='train')
@@ -65,13 +65,14 @@ if saved_model is not None:
     print("Loading model %s" % saved_model)
     model = load_model(saved_model)
 else:
-    print("Loading LSTM model.")
+    print("Creating LSTM model.")
     model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
-
 model.summary()
+
 optimizer = RMSprop()
 loss = keras.losses.CategoricalCrossentropy()
 model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
+
 # train the model
 callbacks_list = [
     callbacks.EarlyStopping(monitor='val_loss', min_delta=5e-3, patience=10),
@@ -104,4 +105,3 @@ plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')
 plt.savefig(acc_save_path + '/accuracy')
 plt.close()
-# # model.save(filepath=model_save_path + '/ConvLSTM.h5')

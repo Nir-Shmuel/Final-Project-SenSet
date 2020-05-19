@@ -1,6 +1,5 @@
 import numpy as np
 from tensorflow import keras
-import tensorflow.keras.backend as K
 import random
 
 '''
@@ -13,7 +12,7 @@ Example:
 
 
 class VideoDataGenerator(keras.utils.Sequence):
-    def __init__(self, list_IDs, dict_id_data, batch_size=1, dim=(96, 96), n_channels=3, padding_val=-1, timesteps=None,
+    def __init__(self, list_IDs, dict_id_data, batch_size=1, dim=(96, 96), n_channels=3, padding_val=0, timesteps=None,
                  n_classes=7, shuffle=True, folder_name='/tf/data/Cropped_Faces_CAER_npy', partition=None,
                  data_format='.npy'):
         self.list_IDs = list_IDs
