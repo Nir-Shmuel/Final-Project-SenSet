@@ -1,21 +1,21 @@
-from tensorflow.keras.optimizers import Nadam, Adam, SGD, RMSprop
+from tensorflow.keras.optimizers import Nadam, Adam, SGD
 import tensorflow.keras as keras
 from ConvLSTM_Model import ConvLSTMModel
 from VideoDataGenerator import VideoDataGenerator
 from tensorflow.keras.models import load_model
-import numpy as np
 from tensorflow.keras import callbacks
 import os
 import matplotlib.pyplot as plt
 import glob
 
 n_epochs = 100
-batch_size = 16
+batch_size = 4
 root_path = '/tf/convlstm'
 model_save_path = root_path + '/model'
 loss_save_path = root_path + '/loss'
 acc_save_path = root_path + '/accuracy'
 data_root_folder = '/tf/data/Cropped_Faces_CAER_npy'
+saved_model = None
 videos_format = 'npy'
 
 emotions = ('Anger', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Surprise', 'Sad')
@@ -57,20 +57,34 @@ def map_data(data_path):
 map_data(data_root_folder)
 # set generators with default values
 train_generator = VideoDataGenerator(list_IDs=partition['train'], dict_id_data=dict_id_data, batch_size=batch_size,
-                                     folder_name=data_root_folder, partition='train')
+                                     folder_name=data_root_folder, data_format='.%s' % videos_format)
 val_generator = VideoDataGenerator(list_IDs=partition['validation'], dict_id_data=dict_id_data, batch_size=batch_size,
-                                   folder_name=data_root_folder, partition='validation')
-model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
+                                   data_format='.%s' % videos_format, folder_name=data_root_folder)
+
+if saved_model is not None:
+    print("Loading model %s" % saved_model)
+    model = load_model(saved_model)
+else:
+    print("Loading LSTM model.")
+    model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
+
 model.summary()
-optimizer = RMSprop()
+optimizer = Nadam(lr=0.002,
+                  beta_1=0.9,
+                  beta_2=0.999,
+                  epsilon=1e-08,
+                  schedule_decay=0.004)
 loss = keras.losses.CategoricalCrossentropy()
 model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 # train the model
 callbacks_list = [
     callbacks.EarlyStopping(monitor='val_loss', min_delta=5e-3, patience=10),
-    # callbacks.ModelCheckpoint()
+
+    callbacks.ModelCheckpoint(filepath=os.path.join(model_save_path, 'model.{epoch:03d}-{val_loss:.3f}.hdf5'),
+    verbose=1,
+    save_best_only=True)
 ]
-history = model.fit(x=train_generator, validation_data=val_generator, epochs=n_epochs, callbacks=callbacks_list)
+history = model.fit(x=train_generator, validation_data=val_generator, epochs=n_epochs)
 
 '''Generate Loss & Accuracy graphs'''
 # "Loss"
@@ -95,5 +109,4 @@ plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')
 plt.savefig(acc_save_path + '/accuracy')
 plt.close()
-# # model.save(filepath=model_save_path + '/ConvLSTM.h5')
-
+# model.save(filepath=model_save_path + '/ConvLSTM.h5')
