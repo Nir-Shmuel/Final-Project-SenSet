@@ -1,4 +1,4 @@
-from tensorflow.keras.optimizers import RMSprop
+from tensorflow.keras.optimizers import SGD
 import tensorflow.keras as keras
 from ConvLSTM_Model import ConvLSTMModel
 from VideoDataGenerator import VideoDataGenerator
@@ -56,11 +56,14 @@ def map_data(data_path):
 
 map_data(data_root_folder)
 
-# set generators with default values
 train_generator = VideoDataGenerator(list_IDs=partition['train'], dict_id_data=dict_id_data, batch_size=batch_size,
-                                     folder_name=data_root_folder, partition='train')
+                                     folder_name=data_root_folder, partition='train', flip_vertical=True,
+                                     flip_horizontal=True, flip_prob=0.5)
+
+# set generators with default values
 val_generator = VideoDataGenerator(list_IDs=partition['validation'], dict_id_data=dict_id_data, batch_size=batch_size,
-                                   folder_name=data_root_folder, partition='validation')
+                                   folder_name=data_root_folder, partition='validation', flip_vertical=True,
+                                   flip_horizontal=True, flip_prob=0.5)
 if saved_model is not None:
     print("Loading model %s" % saved_model)
     model = load_model(saved_model)
@@ -68,18 +71,18 @@ else:
     print("Creating LSTM model.")
     model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
 model.summary()
+optimizer = SGD(learning_rate=0.01, clipnorm=1)
 
-optimizer = RMSprop()
 loss = keras.losses.CategoricalCrossentropy()
 model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 
-# train the model
 callbacks_list = [
     callbacks.EarlyStopping(monitor='val_loss', min_delta=5e-3, patience=10),
-    callbacks.ModelCheckpoint(filepath=os.path.join(model_save_path, 'model.{epoch:03d}-{val_loss:.3f}.hdf5'),
-                              verbose=1,
-                              save_best_only=True)
+    callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.3, patience=3, verbose=1, min_delta=5e-3, min_lr=1e-4),
+    # factor 0.2
+    callbacks.ModelCheckpoint(filepath=os.path.join(model_save_path, 'model.hdf5'), verbose=0, save_best_only=True)
 ]
+# train the model
 history = model.fit(x=train_generator, validation_data=val_generator, epochs=n_epochs, callbacks=callbacks_list)
 
 '''Generate Loss & Accuracy graphs'''
@@ -92,7 +95,7 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')
-plt.savefig(loss_save_path + '/losses')
+plt.savefig(loss_save_path + '/loss')
 plt.close()
 #  "Accuracy"
 if not os.path.exists(acc_save_path):

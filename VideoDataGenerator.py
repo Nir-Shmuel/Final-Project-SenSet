@@ -14,7 +14,7 @@ Example:
 class VideoDataGenerator(keras.utils.Sequence):
     def __init__(self, list_IDs, dict_id_data, batch_size=1, dim=(96, 96), n_channels=3, padding_val=0, timesteps=None,
                  n_classes=7, shuffle=True, folder_name='/tf/data/Cropped_Faces_CAER_npy', partition=None,
-                 data_format='.npy'):
+                 data_format='.npy', flip_horizontal=False, flip_vertical=False, flip_prob=0.5):
         self.list_IDs = list_IDs
         self.dict_id_data = dict_id_data
         self.batch_size = batch_size
@@ -26,7 +26,13 @@ class VideoDataGenerator(keras.utils.Sequence):
         self.shuffle = shuffle
         self.data_format = data_format
         self.folder_name = folder_name
+        if partition not in {'train', 'validation', 'test'}:
+            raise ValueError('partition should be: train, validation or test')
         self.partition = partition
+        self.flip_horizontal = flip_horizontal
+        self.flip_vertical = flip_vertical
+        if 0 <= flip_prob <= 1:
+            self.flip_prob = flip_prob
         self.on_epoch_end()
 
     # Returns the number of batches per epoch
@@ -43,6 +49,12 @@ class VideoDataGenerator(keras.utils.Sequence):
 
         # Generate data
         X, y = self.__data_generation(list_IDs_temp)
+
+        if self.flip_vertical and np.random.uniform(0, 1) > self.flip_prob:
+            X = np.flip(X, axis=2)
+
+        if self.flip_horizontal and np.random.uniform(0, 1) > self.flip_prob:
+            X = np.flip(X, axis=3)
 
         return X, y, [None]
 
@@ -71,7 +83,7 @@ class VideoDataGenerator(keras.utils.Sequence):
 
         if self.timesteps is None:
             max_n_frames = np.max([v.shape[0] for v in videos_list])
-            max_n_frames = min(max_n_frames, 20)
+            max_n_frames = min(max_n_frames, 40)
         else:
             max_n_frames = self.timesteps
         r_trunc = self.random_truncating(videos_list, max_n_frames)
