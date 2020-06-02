@@ -4,9 +4,12 @@ from ConvLSTM_Model import ConvLSTMModel
 from VideoDataGenerator import VideoDataGenerator
 from tensorflow.keras.models import load_model
 from tensorflow.keras import callbacks
+from sklearn.metrics import confusion_matrix, classification_report
 import os
 import matplotlib.pyplot as plt
 import glob
+import numpy as np
+import pandas as pd
 
 n_epochs = 100
 batch_size = 16
@@ -60,10 +63,13 @@ train_generator = VideoDataGenerator(list_IDs=partition['train'], dict_id_data=d
                                      folder_name=data_root_folder, partition='train', flip_vertical=True,
                                      flip_horizontal=True, flip_prob=0.5)
 
-# set generators with default values
 val_generator = VideoDataGenerator(list_IDs=partition['validation'], dict_id_data=dict_id_data, batch_size=batch_size,
                                    folder_name=data_root_folder, partition='validation', flip_vertical=True,
                                    flip_horizontal=True, flip_prob=0.5)
+
+test_generator = VideoDataGenerator(list_IDs=partition['test'], dict_id_data=dict_id_data, batch_size=batch_size,
+                                    folder_name=data_root_folder, partition='test')
+
 if saved_model is not None:
     print("Loading model %s" % saved_model)
     model = load_model(saved_model)
@@ -71,15 +77,14 @@ else:
     print("Creating LSTM model.")
     model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
 model.summary()
-optimizer = SGD(learning_rate=0.01, clipnorm=1)
+optimizer = SGD(learning_rate=0.05, clipnorm=1)
 
 loss = keras.losses.CategoricalCrossentropy()
 model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 
 callbacks_list = [
     callbacks.EarlyStopping(monitor='val_loss', min_delta=5e-3, patience=10),
-    callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.3, patience=3, verbose=1, min_delta=5e-3, min_lr=1e-4),
-    # factor 0.2
+    callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.6, patience=10, verbose=1, min_delta=5e-3, min_lr=1e-4),
     callbacks.ModelCheckpoint(filepath=os.path.join(model_save_path, 'model.hdf5'), verbose=0, save_best_only=True)
 ]
 # train the model
@@ -108,3 +113,18 @@ plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')
 plt.savefig(acc_save_path + '/accuracy')
 plt.close()
+
+print('predicting test set')
+
+# print confusion matrix
+y_true = np.concatenate([np.argmax(test_generator[i][1], axis=1) for i in range(len(test_generator))])
+y_pred = np.argmax(model.predict(x=test_generator, steps=len(test_generator)), axis=1)
+
+print('creating and saving confusion matrix')
+
+cm = pd.DataFrame(data=confusion_matrix(y_true=y_true, y_pred=y_pred),
+                  index=['True: %s' % emotion for emotion in emotions],
+                  columns=['Pred: %s' % emotion for emotion in emotions])
+cm.to_csv(path_or_buf=root_path + '/confusion_matrix.csv')
+print(cm)
+print(classification_report(y_true=y_true, y_pred=y_pred, target_names=[emotion for emotion in emotions]))
