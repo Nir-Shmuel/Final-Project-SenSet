@@ -1,39 +1,39 @@
 import cv2
 import face_recognition
+import requests
 
 video_capture = cv2.VideoCapture(0)
-fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-shape = 100, 100
-
+shape = 90, 90
 face_locations = []
 
 while True:
+    # for each frame
     ret, frame = video_capture.read()
 
     if str(type(frame)) == "<class 'NoneType'>":
         break
-    # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
+
+    # Convert the image from BGR to RGB
     rgb_frame = frame[:, :, ::-1]
 
-    # Find all the faces in the current frame of video
     face_locations = face_recognition.face_locations(rgb_frame)
 
-    # Display the results
     for top, right, bottom, left in face_locations:
         crop_img = frame[top:bottom, left:right]
         resized = cv2.resize(crop_img, shape)
-        output.write(resized)
-        cv2.imshow("cropped", crop_img)
+
+        # send resized to net
+        r = requests.get('http://localhost:9001/senset')
+
+        # draw result
         cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-        cv2.putText(frame, 'Einor', (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 255), 2)
+        cv2.putText(frame, r.text, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
     cv2.imshow('Video', frame)
 
-    # Hit 'q' on the keyboard to quit!
+    # Hit 'q' on the keyboard to quit
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Release handle to the webcam
 video_capture.release()
-output.release()
 cv2.destroyAllWindows()
