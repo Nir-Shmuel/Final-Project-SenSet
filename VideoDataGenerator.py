@@ -50,10 +50,10 @@ class VideoDataGenerator(keras.utils.Sequence):
         # Generate data
         X, y = self.__data_generation(list_IDs_temp)
 
-        if self.flip_vertical and np.random.uniform(0, 1) > self.flip_prob:
+        if self.flip_vertical and np.random.uniform(0, 1) < self.flip_prob:
             X = np.flip(X, axis=2)
 
-        if self.flip_horizontal and np.random.uniform(0, 1) > self.flip_prob:
+        if self.flip_horizontal and np.random.uniform(0, 1) < self.flip_prob:
             X = np.flip(X, axis=3)
 
         return X, y, [None]
@@ -83,7 +83,7 @@ class VideoDataGenerator(keras.utils.Sequence):
 
         if self.timesteps is None:
             max_n_frames = np.max([v.shape[0] for v in videos_list])
-            max_n_frames = min(max_n_frames, 40)
+            max_n_frames = min(max_n_frames, 20)
         else:
             max_n_frames = self.timesteps
         r_trunc = self.random_truncating(videos_list, max_n_frames)

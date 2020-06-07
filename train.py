@@ -1,6 +1,6 @@
 from tensorflow.keras.optimizers import SGD
 import tensorflow.keras as keras
-from ConvLSTM_Model import ConvLSTMModel
+import Models
 from VideoDataGenerator import VideoDataGenerator
 from tensorflow.keras.models import load_model
 from tensorflow.keras import callbacks
@@ -10,15 +10,16 @@ import matplotlib.pyplot as plt
 import glob
 import numpy as np
 import pandas as pd
+import sklearn
 
-n_epochs = 100
+n_epochs = 150
 batch_size = 16
-root_path = '/tf/convlstm'
+root_path = '/tf'
 model_save_path = root_path + '/model'
+model_save_name = 'cnnlstm.hdf5'
 loss_save_path = root_path + '/loss'
 acc_save_path = root_path + '/accuracy'
 data_root_folder = '/tf/data/Cropped_Faces_CAER_npy'
-saved_model = None
 videos_format = 'npy'
 
 emotions = ('Anger', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Surprise', 'Sad')
@@ -70,25 +71,31 @@ val_generator = VideoDataGenerator(list_IDs=partition['validation'], dict_id_dat
 test_generator = VideoDataGenerator(list_IDs=partition['test'], dict_id_data=dict_id_data, batch_size=batch_size,
                                     folder_name=data_root_folder, partition='test')
 
-if saved_model is not None:
-    print("Loading model %s" % saved_model)
-    model = load_model(saved_model)
+if os.path.exists(os.path.join(model_save_path, model_save_name)):
+    print('Loading model')
+    model = load_model(filepath=os.path.join(model_save_path, model_save_name))
 else:
-    print("Creating LSTM model.")
-    model = ConvLSTMModel(channels=3, pixels_x=96, pixels_y=96)
-model.summary()
-optimizer = SGD(learning_rate=0.05, clipnorm=1)
+    print("Creating CNN+LSTM model.")
+    model = Models.cnn3d(channels=3, pixels_x=96, pixels_y=96)
 
+model.summary()
+optimizer = SGD(learning_rate=0.1, clipnorm=1)
 loss = keras.losses.CategoricalCrossentropy()
 model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 
 callbacks_list = [
-    callbacks.EarlyStopping(monitor='val_loss', min_delta=5e-3, patience=10),
-    callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.6, patience=10, verbose=1, min_delta=5e-3, min_lr=1e-4),
-    callbacks.ModelCheckpoint(filepath=os.path.join(model_save_path, 'model.hdf5'), verbose=0, save_best_only=True)
+    callbacks.EarlyStopping(monitor='val_loss', patience=15),
+    callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, verbose=1, min_delta=5e-3, min_lr=1e-5),
+    callbacks.ModelCheckpoint(filepath=os.path.join(model_save_path, model_save_name), verbose=0, save_best_only=True)
 ]
+
+# calculate class weights
+y = [dict_id_data[i]['label_val'] for i in dict_id_data.keys()]
+class_weights = sklearn.utils.class_weight.compute_class_weight(class_weight='balanced', classes=np.unique(y), y=y)
+
 # train the model
-history = model.fit(x=train_generator, validation_data=val_generator, epochs=n_epochs, callbacks=callbacks_list)
+history = model.fit(x=train_generator, validation_data=val_generator, epochs=n_epochs, callbacks=callbacks_list,
+                    class_weight=class_weights)
 
 '''Generate Loss & Accuracy graphs'''
 # "Loss"
@@ -100,7 +107,7 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')
-plt.savefig(loss_save_path + '/loss')
+plt.savefig(loss_save_path + '/loss_cnnlstm')
 plt.close()
 #  "Accuracy"
 if not os.path.exists(acc_save_path):
@@ -111,7 +118,7 @@ plt.title('model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')
-plt.savefig(acc_save_path + '/accuracy')
+plt.savefig(acc_save_path + '/accuracy_cnnlstm')
 plt.close()
 
 print('predicting test set')
@@ -125,6 +132,6 @@ print('creating and saving confusion matrix')
 cm = pd.DataFrame(data=confusion_matrix(y_true=y_true, y_pred=y_pred),
                   index=['True: %s' % emotion for emotion in emotions],
                   columns=['Pred: %s' % emotion for emotion in emotions])
-cm.to_csv(path_or_buf=root_path + '/confusion_matrix.csv')
+cm.to_csv(path_or_buf=root_path + '/confusion_matrix_cnnlstm.csv')
 print(cm)
 print(classification_report(y_true=y_true, y_pred=y_pred, target_names=[emotion for emotion in emotions]))
