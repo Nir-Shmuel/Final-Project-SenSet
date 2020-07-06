@@ -1,4 +1,5 @@
-from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.optimizers import SGD, RMSprop
+from dotenv import load_dotenv
 import tensorflow.keras as keras
 import Models
 from VideoDataGenerator import VideoDataGenerator
@@ -12,17 +13,21 @@ import numpy as np
 import pandas as pd
 import sklearn
 
-n_epochs = 150
-batch_size = 16
-root_path = '/tf'
-model_save_path = root_path + '/model'
-model_save_name = 'cnnlstm.hdf5'
-loss_save_path = root_path + '/loss'
-acc_save_path = root_path + '/accuracy'
-data_root_folder = '/tf/data/Cropped_Faces_CAER_npy'
-videos_format = 'npy'
+load_dotenv(dotenv_path='dotenv')
 
-emotions = ('Anger', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Surprise', 'Sad')
+n_epochs = 200
+batch_size = 64
+root_path = os.getenv('ROOT_PATH')
+model_save_path = os.path.join(root_path, os.getenv('MODEL_SAVE_DIR'))
+model_save_name = os.getenv('MODEL_SAVE_NAME')
+loss_save_path = os.path.join(root_path, os.getenv('LOSS_SAVE_DIR'))
+acc_save_path = os.path.join(root_path, os.getenv('ACC_SAVE_DIR'))
+data_root_folder = os.getenv('DATA_ROOT_FOLDER')
+videos_format = os.getenv('VIDEOS_FORMAT')
+
+# emotions = ('Anger', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Surprise', 'Sad')
+# emotions = ('Anger', 'Happy', 'Neutral', 'Sad')
+emotions = ('Happy', 'Neutral', 'Sad')
 folders_structure = {
     'train': [emotions[i] for i in range(len(emotions))],
     'validation': [emotions[i] for i in range(len(emotions))],
@@ -60,32 +65,31 @@ def map_data(data_path):
 
 map_data(data_root_folder)
 
-train_generator = VideoDataGenerator(list_IDs=partition['train'], dict_id_data=dict_id_data, batch_size=batch_size,
-                                     folder_name=data_root_folder, partition='train', flip_vertical=True,
-                                     flip_horizontal=True, flip_prob=0.5)
+train_generator = VideoDataGenerator(list_IDs=partition['train'], dict_id_data=dict_id_data,
+                                     folder_name=data_root_folder, n_classes=len(emotions), batch_size=batch_size,
+                                     partition='train', flip_vertical=True, flip_horizontal=True, flip_prob=0.5)
 
-val_generator = VideoDataGenerator(list_IDs=partition['validation'], dict_id_data=dict_id_data, batch_size=batch_size,
-                                   folder_name=data_root_folder, partition='validation', flip_vertical=True,
-                                   flip_horizontal=True, flip_prob=0.5)
+val_generator = VideoDataGenerator(list_IDs=partition['validation'], dict_id_data=dict_id_data,
+                                   folder_name=data_root_folder, n_classes=len(emotions), batch_size=batch_size,
+                                   partition='validation', flip_vertical=True, flip_horizontal=True, flip_prob=0.5)
 
-test_generator = VideoDataGenerator(list_IDs=partition['test'], dict_id_data=dict_id_data, batch_size=batch_size,
-                                    folder_name=data_root_folder, partition='test')
+test_generator = VideoDataGenerator(list_IDs=partition['test'], dict_id_data=dict_id_data, folder_name=data_root_folder,
+                                    n_classes=len(emotions), shuffle=False, batch_size=batch_size, partition='test')
 
 if os.path.exists(os.path.join(model_save_path, model_save_name)):
     print('Loading model')
     model = load_model(filepath=os.path.join(model_save_path, model_save_name))
 else:
     print("Creating CNN+LSTM model.")
-    model = Models.cnn3d(channels=3, pixels_x=96, pixels_y=96)
+    model = Models.cnn_lstm(channels=3, pixels_x=96, pixels_y=96, output_size=len(emotions))
 
-model.summary()
-optimizer = SGD(learning_rate=0.1, clipnorm=1)
+optimizer = RMSprop()
 loss = keras.losses.CategoricalCrossentropy()
 model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
 
 callbacks_list = [
     callbacks.EarlyStopping(monitor='val_loss', patience=15),
-    callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.2, patience=10, verbose=1, min_delta=5e-3, min_lr=1e-5),
+    callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=10, verbose=1, min_delta=5e-3, min_lr=1e-5),
     callbacks.ModelCheckpoint(filepath=os.path.join(model_save_path, model_save_name), verbose=0, save_best_only=True)
 ]
 
@@ -107,7 +111,7 @@ plt.title('model loss')
 plt.ylabel('loss')
 plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')
-plt.savefig(loss_save_path + '/loss_cnnlstm')
+plt.savefig(os.path.join(loss_save_path, os.getenv('LOSS_SAVE_NAME')))
 plt.close()
 #  "Accuracy"
 if not os.path.exists(acc_save_path):
@@ -118,7 +122,7 @@ plt.title('model accuracy')
 plt.ylabel('accuracy')
 plt.xlabel('epoch')
 plt.legend(['train', 'validation'], loc='upper left')
-plt.savefig(acc_save_path + '/accuracy_cnnlstm')
+plt.savefig(os.path.join(acc_save_path, os.getenv('ACC_SAVE_NAME')))
 plt.close()
 
 print('predicting test set')
@@ -132,6 +136,6 @@ print('creating and saving confusion matrix')
 cm = pd.DataFrame(data=confusion_matrix(y_true=y_true, y_pred=y_pred),
                   index=['True: %s' % emotion for emotion in emotions],
                   columns=['Pred: %s' % emotion for emotion in emotions])
-cm.to_csv(path_or_buf=root_path + '/confusion_matrix_cnnlstm.csv')
+cm.to_csv(path_or_buf=os.path.join(root_path, os.getenv('CONFUSION_MATRIX_NAME')))
 print(cm)
 print(classification_report(y_true=y_true, y_pred=y_pred, target_names=[emotion for emotion in emotions]))

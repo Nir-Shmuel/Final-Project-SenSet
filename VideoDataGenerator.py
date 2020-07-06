@@ -10,10 +10,38 @@ Example:
     
 '''
 
+'''
+listIDs: list that contains the IDs of videos in the given partition. shape: <partition>-<emotion>-<video_number>.
+
+dict_id_data:  dictionary that contains the metadata for each video in the given partition.
+                keys: values of listIDs.
+                values: a dictionaty with keys: 1) 'emotion' - the video's emotion.
+                                                2) 'video_name' - the name of of the video file.
+                                                3) 'label_val' - the y_true value of the video.
+                                                
+batch_size: number of videos in each batch.
+
+dim: the height and width of a frame.
+n_channels: number of channels in a frame.
+
+padding_val: value of the added frames when the video has less than the minimum timesteps.
+timesteps:  when not None, each video is set to have timesteps number of frames.
+            if video has less than timesteps => it is padded with padding_val.
+            if video has more than timesteps => randomly pick a timesteps long part of the video.
+n_classes: number of classes to be classified.
+shuffle: if true, the order of videos will be shuffled on each epoch end.
+folder_name: the path to root folder of the data.
+partition: the partition to take the data from: 'train' | 'validation' | 'test'. 
+data_format: the format of the data.
+flip_horizontal: if true, the data will be flipped horizontally in probability of flip_prob. 
+flip_vertical: if true, the data will be flipped vertically in probability of flip_prob.
+flip_prob: the probability to flip the data.
+'''
+
 
 class VideoDataGenerator(keras.utils.Sequence):
-    def __init__(self, list_IDs, dict_id_data, batch_size=1, dim=(96, 96), n_channels=3, padding_val=0, timesteps=None,
-                 n_classes=7, shuffle=True, folder_name='/tf/data/Cropped_Faces_CAER_npy', partition=None,
+    def __init__(self, list_IDs, dict_id_data, folder_name, batch_size=1, dim=(96, 96), n_channels=3, padding_val=0, timesteps=None,
+                 n_classes=7, shuffle=True, partition=None,
                  data_format='.npy', flip_horizontal=False, flip_vertical=False, flip_prob=0.5):
         self.list_IDs = list_IDs
         self.dict_id_data = dict_id_data

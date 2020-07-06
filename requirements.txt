@@ -1,0 +1,8 @@
+python-dotenv
+tensorflow==2.1.0
+numpy
+sklearn
+matplotlib
+pandas
+opencv-python
+face_recognition
