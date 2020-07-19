@@ -23,6 +23,7 @@ batch_size: number of videos in each batch.
 
 dim: the height and width of a frame.
 n_channels: number of channels in a frame.
+n_inputs: number of inputs of the network.
 
 padding_val: value of the added frames when the video has less than the minimum timesteps.
 timesteps:  when not None, each video is set to have timesteps number of frames.
@@ -40,7 +41,7 @@ flip_prob: the probability to flip the data.
 
 
 class VideoDataGenerator(keras.utils.Sequence):
-    def __init__(self, list_IDs, dict_id_data, folder_name, batch_size=1, dim=(96, 96), n_channels=3, padding_val=0, timesteps=None,
+    def __init__(self, list_IDs, dict_id_data, folder_name, batch_size=1, dim=(96, 96), n_channels=3, n_inputs=1, padding_val=0, timesteps=None,
                  n_classes=7, shuffle=True, partition=None,
                  data_format='.npy', flip_horizontal=False, flip_vertical=False, flip_prob=0.5):
         self.list_IDs = list_IDs
@@ -48,6 +49,7 @@ class VideoDataGenerator(keras.utils.Sequence):
         self.batch_size = batch_size
         self.dim = dim
         self.n_channels = n_channels
+        self.n_inputs = n_inputs
         self.padding_val = padding_val
         self.timesteps = timesteps
         self.n_classes = n_classes
@@ -84,7 +86,7 @@ class VideoDataGenerator(keras.utils.Sequence):
         if self.flip_horizontal and np.random.uniform(0, 1) < self.flip_prob:
             X = np.flip(X, axis=3)
 
-        return X, y, [None]
+        return [X]*self.n_inputs, y, [None]
 
     # Updates indexes after each epoch
     def on_epoch_end(self):

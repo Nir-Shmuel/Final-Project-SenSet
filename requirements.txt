@@ -6,3 +6,6 @@ matplotlib
 pandas
 opencv-python
 face_recognition
+pydot_ng
+pydotplus
+graphviz

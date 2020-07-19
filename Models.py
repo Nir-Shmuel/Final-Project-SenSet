@@ -1,11 +1,11 @@
-from tensorflow.keras import Sequential, Input, regularizers
+from tensorflow.keras import Sequential, Input, regularizers, Model, layers
 from tensorflow.keras.layers import MaxPooling2D, Dense, Flatten, Softmax, BatchNormalization, \
     LeakyReLU, LSTM, TimeDistributed, Conv2D, Dropout, Conv3D, MaxPool3D, GlobalAveragePooling3D
 
 
 def cnn_lstm(channels=3, pixels_x=96, pixels_y=96, output_size=7):
-    model = Sequential()
-    model.add(Input(shape=(None, pixels_x, pixels_y, channels), name='input'))
+    model = Sequential(name='cnn_lstm')
+    model.add(Input(shape=(None, pixels_x, pixels_y, channels), name='input_cnnlstm'))
     model.add(TimeDistributed(Conv2D(filters=16, kernel_size=(5, 5), strides=(1, 1), data_format='channels_last'),
                               name='conv1'))
     model.add(
@@ -29,12 +29,12 @@ def cnn_lstm(channels=3, pixels_x=96, pixels_y=96, output_size=7):
                               name='conv_4'))
     model.add(TimeDistributed(BatchNormalization(), name='BN_4'))
     model.add(TimeDistributed(LeakyReLU(), name='LR_4'))
-    model.add(TimeDistributed(Dropout(0.3)))
+    model.add(TimeDistributed(Dropout(0.3), name='Dropout_4'))
 
     model.add(TimeDistributed(Conv2D(filters=512, kernel_size=(3, 3), strides=(1, 1), data_format='channels_last'),
                               name='conv_5'))
     model.add(TimeDistributed(LeakyReLU(), name='LR_5'))
-    model.add(TimeDistributed(Dropout(0.3)))
+    model.add(TimeDistributed(Dropout(0.3, name='Dropout_5')))
 
     model.add(TimeDistributed(Flatten(), name='flatten_layer'))
     model.add(TimeDistributed(BatchNormalization(), name='BN_6'))
@@ -44,7 +44,7 @@ def cnn_lstm(channels=3, pixels_x=96, pixels_y=96, output_size=7):
     model.add(Dense(units=128, kernel_regularizer=regularizers.l2(0.01)))
     model.add(BatchNormalization(name='BN_8'))
     model.add(LeakyReLU(name='LR_8'))
-    model.add((Dropout(0.5)))
+    model.add((Dropout(0.5, name='Dropout_8')))
     model.add(Dense(units=output_size, name='output'))
     model.add(Softmax())
 
@@ -52,43 +52,61 @@ def cnn_lstm(channels=3, pixels_x=96, pixels_y=96, output_size=7):
 
 
 def cnn3d(channels=3, pixels_x=96, pixels_y=96, output_size=7):
-    model = Sequential()
-    model.add(Input(shape=(None, pixels_x, pixels_y, channels), name='input'))
-    model.add(Conv3D(filters=16, kernel_size=(3, 3, 3), padding='same', use_bias=False,
-                     kernel_initializer='glorot_normal', name="Conv_1"))
-    model.add(BatchNormalization(name="bn_1"))
-    model.add(LeakyReLU(alpha=0.3, name="lr_1"))
-    model.add(MaxPool3D(pool_size=(1, 2, 2), strides=None, padding='valid', name="mp_1"))
-    #         self.add(layers.Dropout(0.2))
+    model = Sequential(name='conv3d')
+    model.add(Input(shape=(None, pixels_x, pixels_y, channels), name='input_conv3d'))
+    model.add(
+        Conv3D(filters=16, kernel_size=(3, 5, 5), strides=(1, 2, 2), use_bias=False, kernel_initializer='glorot_normal',
+               name="Conv_1"))
+    model.add(TimeDistributed(BatchNormalization(), name="bn_1"))
+    model.add(TimeDistributed(LeakyReLU(alpha=0.3), name="lr_1"))
 
-    model.add(Conv3D(filters=32, kernel_size=(3, 3, 3), padding='same', use_bias=False,
-                     kernel_initializer='glorot_normal', name="Conv_2"))
-    model.add(BatchNormalization(name="bn_2"))
-    model.add(LeakyReLU(alpha=0.3, name="lr_2"))
-    model.add(MaxPool3D(pool_size=(2, 2, 2), strides=None, padding='valid', name="mp_2"))
+    model.add(
+        Conv3D(filters=64, kernel_size=(3, 3, 3), strides=(1, 2, 2), use_bias=False, kernel_initializer='glorot_normal',
+               name="Conv_2"))
+    model.add(TimeDistributed(BatchNormalization(), name="bn_2"))
+    model.add(TimeDistributed(LeakyReLU(alpha=0.3), name="lr_2"))
 
-    model.add(Conv3D(filters=64, kernel_size=(3, 3, 3), padding='same', use_bias=False,
+    model.add(Conv3D(filters=128, kernel_size=(3, 3, 3), strides=(1, 2, 2), use_bias=False,
                      kernel_initializer='glorot_normal', name="Conv_3"))
-    model.add(BatchNormalization(name="bn_3"))
-    model.add(LeakyReLU(alpha=0.3, name="lr_3"))
-    model.add(MaxPool3D(pool_size=(2, 2, 2), strides=None, padding='valid', name="mp_3"))
-    #         self.add(layers.Dropout(0.15))
+    model.add(TimeDistributed(BatchNormalization(), name="bn_3"))
+    model.add(TimeDistributed(LeakyReLU(alpha=0.3), name="lr_3"))
 
-    model.add(Conv3D(filters=128, kernel_size=(3, 3, 3), padding='same', use_bias=False,
+    model.add(Conv3D(filters=256, kernel_size=(3, 3, 3), strides=(1, 1, 1), use_bias=False,
                      kernel_initializer='glorot_normal', name="Conv_4"))
-    model.add(BatchNormalization(name="bn_4"))
-    model.add(LeakyReLU(alpha=0.3, name="lr_4"))
-    model.add(MaxPool3D(pool_size=(2, 2, 2), strides=None, padding='valid', name="mp_4"))
-    model.add(Dropout(0.25))
+    model.add(TimeDistributed(BatchNormalization(), name="bn_4"))
+    model.add(TimeDistributed(LeakyReLU(alpha=0.3), name="lr_4"))
+    model.add(MaxPool3D(pool_size=(2, 2, 2), padding='valid', name="mp_4"))
+    model.add(TimeDistributed(Dropout(0.25)))
 
-    model.add(Conv3D(filters=512, kernel_size=(3, 3, 3), padding='same', use_bias=False,
+    model.add(Conv3D(filters=512, kernel_size=(3, 3, 3), strides=(1, 1, 1), use_bias=False,
                      kernel_initializer='glorot_normal', name="Conv_5"))
+    model.add(TimeDistributed(BatchNormalization(), name="bn_5"))
+    model.add(TimeDistributed(LeakyReLU(alpha=0.3), name="lr_5"))
+    model.add(TimeDistributed(Dropout(0.3)))
 
-    model.add(Dropout(0.3))
     model.add(GlobalAveragePooling3D())
-    model.add(BatchNormalization(name="bn_5"))
-    model.add(LeakyReLU(alpha=0.3, name="lr_5"))
+    model.add(BatchNormalization(name="bn_6"))
+    model.add(LeakyReLU(alpha=0.3, name="lr_6"))
+    model.add((Dropout(0.5)))
+    model.add(Dense(units=128, kernel_regularizer=regularizers.l2(0.005)))
+    model.add(BatchNormalization(name="bn_7"))
+    model.add(LeakyReLU(alpha=0.3, name="lr_7"))
+    model.add((Dropout(0.5)))
     model.add(Dense(output_size))
     model.add(Softmax())
 
     return model
+
+
+def ensemble(models=None, output_size=7):
+    for i, model in enumerate(models, 1):
+        model.trainable = False
+        for j, layer in enumerate(model.layers, 1):
+            # layer.trainable = False
+            layer._name = model.name + str(i) + '_' + layer.name
+
+    inputs = [model.input for model in models]
+    ensemble_outputs = layers.concatenate([model.output for model in models])
+    output = Dense(output_size, activation='softmax')(ensemble_outputs)
+    combined = Model(inputs=inputs, outputs=output)
+    return combined
