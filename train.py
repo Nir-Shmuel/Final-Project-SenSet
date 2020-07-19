@@ -1,6 +1,8 @@
 from tensorflow.keras.optimizers import SGD, RMSprop
 from dotenv import load_dotenv
 import tensorflow.keras as keras
+
+from DataMapper import map_data
 import Models
 from VideoDataGenerator import VideoDataGenerator
 from tensorflow.keras.models import load_model
@@ -8,7 +10,6 @@ from tensorflow.keras import callbacks
 from sklearn.metrics import confusion_matrix, classification_report
 import os
 import matplotlib.pyplot as plt
-import glob
 import numpy as np
 import pandas as pd
 import sklearn
@@ -28,42 +29,8 @@ videos_format = os.getenv('VIDEOS_FORMAT')
 # emotions = ('Anger', 'Disgust', 'Fear', 'Happy', 'Neutral', 'Surprise', 'Sad')
 # emotions = ('Anger', 'Happy', 'Neutral', 'Sad')
 emotions = ('Happy', 'Neutral', 'Sad')
-folders_structure = {
-    'train': [emotions[i] for i in range(len(emotions))],
-    'validation': [emotions[i] for i in range(len(emotions))],
-    'test': [emotions[i] for i in range(len(emotions))]
-}
-labels_name2val = {emotions[i]: i for i in range(len(emotions))}
-partition = {
-    'train': [],
-    'validation': [],
-    'test': []
-}
 
-dict_id_data = {}
-
-
-def path2video_name(v_path, vf_len, id_len):
-    return int(v_path[-(id_len + vf_len + 1): -(vf_len + 1)])
-
-
-def map_data(data_path):
-    for par in folders_structure:
-        par_path = '%s/%s' % (data_path, par)
-        for emotion in folders_structure[par]:
-            emotion_path = '%s/%s' % (par_path, emotion)
-            video_paths = glob.glob('%s/*%s' % (emotion_path, videos_format))
-            for video_path in video_paths:
-                video_name = path2video_name(v_path=video_path, vf_len=len(videos_format), id_len=4)
-                video_id = '%s-%s-%04d' % (par, emotion, video_name)
-                partition[par].append(video_id)
-                dict_id_data[video_id] = {'emotion': emotion,
-                                          'video_name': video_name,
-                                          'label_val': labels_name2val[emotion],
-                                          }
-
-
-map_data(data_root_folder)
+partition, dict_id_data = map_data(data_path=data_root_folder, emotions=emotions, videos_format=videos_format)
 
 train_generator = VideoDataGenerator(list_IDs=partition['train'], dict_id_data=dict_id_data,
                                      folder_name=data_root_folder, n_classes=len(emotions), batch_size=batch_size,
