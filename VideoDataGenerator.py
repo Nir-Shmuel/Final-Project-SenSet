@@ -7,24 +7,21 @@ Each video path is the shape of:
     ./data/<folder_name>/<partition>/<labels[i]>/<%04d><data_format>
 Example:
     ./data/Cropped_Faces_CAER_npy/train/Anger/0001.npy
-    
+
 '''
 
 '''
 listIDs: list that contains the IDs of videos in the given partition. shape: <partition>-<emotion>-<video_number>.
-
 dict_id_data:  dictionary that contains the metadata for each video in the given partition.
                 keys: values of listIDs.
-                values: a dictionaty with keys: 1) 'emotion' - the video's emotion.
+                values: a dictionary with keys: 1) 'emotion' - the video's emotion.
                                                 2) 'video_name' - the name of of the video file.
                                                 3) 'label_val' - the y_true value of the video.
-                                                
-batch_size: number of videos in each batch.
 
+batch_size: number of videos in each batch.
 dim: the height and width of a frame.
 n_channels: number of channels in a frame.
 n_inputs: number of inputs of the network.
-
 padding_val: value of the added frames when the video has less than the minimum timesteps.
 timesteps:  when not None, each video is set to have timesteps number of frames.
             if video has less than timesteps => it is padded with padding_val.
@@ -41,7 +38,8 @@ flip_prob: the probability to flip the data.
 
 
 class VideoDataGenerator(keras.utils.Sequence):
-    def __init__(self, list_IDs, dict_id_data, folder_name, batch_size=1, dim=(96, 96), n_channels=3, n_inputs=1, padding_val=0, timesteps=None,
+    def __init__(self, list_IDs, dict_id_data, folder_name, batch_size=1, dim=(96, 96), n_channels=3, n_inputs=1,
+                 padding_val=0, timesteps=None,
                  n_classes=7, shuffle=True, partition=None,
                  data_format='.npy', flip_horizontal=False, flip_vertical=False, flip_prob=0.5):
         self.list_IDs = list_IDs
@@ -86,7 +84,7 @@ class VideoDataGenerator(keras.utils.Sequence):
         if self.flip_horizontal and np.random.uniform(0, 1) < self.flip_prob:
             X = np.flip(X, axis=3)
 
-        return [X]*self.n_inputs, y, [None]
+        return [X] * self.n_inputs, y, [None]
 
     # Updates indexes after each epoch
     def on_epoch_end(self):

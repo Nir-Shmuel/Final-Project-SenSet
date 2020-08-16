@@ -10,12 +10,8 @@ import time
 load_dotenv(dotenv_path='dotenv')
 
 emotions = [
-    # 'Anger',
-    # 'Disgust',
-    # 'Fear',
     'Happy',
     'Neutral',
-    # 'Surprise',
     'Sad'
 ]
 
@@ -47,14 +43,9 @@ while True:
 
     # Convert the image from BGR to RGB
     rgb_frame = frame[:, :, ::-1]
-
-    cv2.putText(frame, "%s: %.3f" % (emotions[0], prediction[0]), (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 155, 0)
-    cv2.putText(frame, "%s: %.3f" % (emotions[1], prediction[1]), (10, 105), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 155, 0)
-    cv2.putText(frame, "%s: %.3f" % (emotions[2], prediction[2]), (10, 130), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 155, 1)
-    # cv2.putText(frame, "%s: %.3f" % (emotions[3], prediction[3]), (10, 155), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 155, 1)
-    # cv2.putText(frame, "%s: %.3f" % (emotions[4], prediction[4]), (10, 180), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 155, 1)
-    # cv2.putText(frame, "%s: %.3f" % (emotions[5], prediction[5]), (10, 205), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 155, 1)
-    # cv2.putText(frame, "%s: %.3f" % (emotions[6], prediction[6]), (10, 230), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 155, 1)
+    for j, emotion in enumerate(emotions):
+        cv2.putText(frame, "%s: %.3f" % (emotion, prediction[j]), (10, 80 + 25 * j), cv2.FONT_HERSHEY_SIMPLEX, 0.5, 155,
+                    0)
 
     face_locations = face_recognition.face_locations(rgb_frame)
 
