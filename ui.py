@@ -36,6 +36,7 @@ while True:
 
     # for each frame
     ret, frame = video_capture.read()
+    frame = cv2.flip(frame, 1)
     if not ret:
         continue
     if str(type(frame)) == "<class 'NoneType'>":
