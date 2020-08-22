@@ -65,7 +65,7 @@ while True:
         cv2.putText(frame, label, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
 
         if i % frames == 0:
-            y = model.predict(np_vid)
+            y = model.predict([np_vid] * 2)
             index = np.argmax(y, axis=1)
             label = emotions[index[0]]
             prediction = y[0]

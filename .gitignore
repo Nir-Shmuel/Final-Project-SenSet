@@ -1,1 +1,8 @@
-dotenv
+*
+!DataMapper.py
+!Models.py
+!ui.py
+!VideoDataGenerator.py
+!requirements.txt
+!train.py
+!README.md
