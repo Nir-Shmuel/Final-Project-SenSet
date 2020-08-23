@@ -1,4 +1,6 @@
 *
+!models
+!/models/*
 !DataMapper.py
 !Models.py
 !ui.py
@@ -6,3 +8,4 @@
 !requirements.txt
 !train.py
 !README.md
+
